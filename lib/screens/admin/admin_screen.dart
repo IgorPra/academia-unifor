@@ -141,7 +141,7 @@ class _AdminScreenBodyState extends State<AdminScreenBody> {
               _buildCard(
                 context,
                 Icons.notifications,
-                'Gerenciar notificações',
+                'Gerenciar avisos',
                 '$totalNotifications',
                 onTap: () => context.go('/admin/notifications'),
               ),
