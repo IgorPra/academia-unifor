@@ -1,6 +1,5 @@
+import 'package:academia_unifor/services/notifications_service.dart';
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:flutter/services.dart';
 import 'package:academia_unifor/models/notifications.dart';
 import 'package:academia_unifor/widgets.dart';
 
@@ -22,12 +21,10 @@ class _NotificationAdminScreenState extends State<NotificationAdminScreen> {
   }
 
   Future<void> _loadNotifications() async {
-    final jsonStr = await rootBundle.loadString('assets/mocks/notification.json');
-    final data = json.decode(jsonStr) as List;
-    final loaded = data.map((e) => Notifications.fromJson(e)).toList();
+    final notifications = await NotificationService().loadNotifications();
     setState(() {
-      allNotifications = loaded;
-      filteredNotifications = loaded;
+      allNotifications = notifications;
+      filteredNotifications = notifications;
     });
   }
 

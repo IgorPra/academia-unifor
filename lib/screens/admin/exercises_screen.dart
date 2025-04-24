@@ -322,7 +322,18 @@ class EditWorkoutsScreenState extends State<EditWorkoutsScreen> {
                           child: const Text('Adicionar Exercício'),
                         ),
                         ElevatedButton(
-                          onPressed: () => _removeWorkout(index),
+                          onPressed: () async {
+                            bool confirmado = await confirmationDialog(
+                              context: context,
+                              title: 'Remover treino',
+                              message:
+                                  'Você tem certeza que deseja remover este treino?',
+                            );
+
+                            if (confirmado) {
+                              _removeWorkout(index);
+                            }
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.red,
                             shape: RoundedRectangleBorder(
