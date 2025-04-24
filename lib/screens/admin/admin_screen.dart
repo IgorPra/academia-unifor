@@ -4,6 +4,7 @@ import 'package:academia_unifor/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:academia_unifor/models/users.dart';
 import 'package:academia_unifor/models/equipment.dart';
+import 'package:academia_unifor/models/notifications.dart';
 
 class AdminScreen extends StatelessWidget {
   const AdminScreen({super.key});
@@ -38,6 +39,7 @@ class AdminScreenBody extends StatefulWidget {
 class _AdminScreenBodyState extends State<AdminScreenBody> {
   int totalUsers = 0;
   int totalEquipments = 0;
+  int totalNotifications = 0;
 
   @override
   void initState() {
@@ -52,6 +54,9 @@ class _AdminScreenBodyState extends State<AdminScreenBody> {
     final equipmentJson = await bundle.loadString(
       'assets/mocks/equipment.json',
     );
+    final notificationsJson = await bundle.loadString(
+      'assets/mocks/notification.json',
+    );
 
     final users =
         (jsonDecode(usersJson) as List)
@@ -64,6 +69,11 @@ class _AdminScreenBodyState extends State<AdminScreenBody> {
             .map((json) => EquipmentCategory.fromJson(json))
             .toList();
 
+    final notifications =
+        (jsonDecode(notificationsJson) as List)
+            .map((json) => Notifications.fromJson(json))
+            .toList();
+
     final total = equipment.fold<int>(0, (sum, e) => sum + e.total);
 
     if (!mounted) return;
@@ -71,6 +81,7 @@ class _AdminScreenBodyState extends State<AdminScreenBody> {
     setState(() {
       totalUsers = users.length;
       totalEquipments = total;
+      totalNotifications = notifications.length;
     });
   }
 
@@ -126,6 +137,13 @@ class _AdminScreenBodyState extends State<AdminScreenBody> {
                 'Ver treinos',
                 '$totalUsers',
                 onTap: () => context.go('/admin/exercises'),
+              ),
+              _buildCard(
+                context,
+                Icons.notifications,
+                'Gerenciar notificações',
+                '$totalNotifications',
+                onTap: () => context.go('/admin/notifications'),
               ),
             ],
           ),
