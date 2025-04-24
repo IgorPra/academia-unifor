@@ -8,8 +8,7 @@ class NotificationAdminScreen extends StatefulWidget {
   const NotificationAdminScreen({super.key});
 
   @override
-  State<NotificationAdminScreen> createState() =>
-      _NotificationAdminScreenState();
+  State<NotificationAdminScreen> createState() => _NotificationAdminScreenState();
 }
 
 class _NotificationAdminScreenState extends State<NotificationAdminScreen> {
@@ -32,7 +31,7 @@ class _NotificationAdminScreenState extends State<NotificationAdminScreen> {
     });
   }
 
-  void _filter(String query) {
+  void _filterNotifications(String query) {
     setState(() {
       filteredNotifications = allNotifications
           .where((n) => n.title.toLowerCase().contains(query.toLowerCase()))
@@ -50,13 +49,6 @@ class _NotificationAdminScreenState extends State<NotificationAdminScreen> {
     });
   }
 
-  void _deleteNotification(Notifications notification) {
-    setState(() {
-      allNotifications.removeWhere((n) => n.id == notification.id);
-      filteredNotifications = List.from(allNotifications);
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -67,24 +59,37 @@ class _NotificationAdminScreenState extends State<NotificationAdminScreen> {
           currentIndex: 4,
           child: Scaffold(
             backgroundColor: theme.scaffoldBackgroundColor,
-            appBar: SearchAppBar(onSearchChanged: _filter, showChatIcon: false),
-            body: NotificationAdminBody(
+            appBar: SearchAppBar(
+              onSearchChanged: _filterNotifications,
+              showChatIcon: false,
+            ),
+            body: NotificationsScreenBody(
               notifications: filteredNotifications,
-              onTapNotification: (notification) async {
-                final updated = await Navigator.push<Notifications?>(
+              onUpdateNotification: _updateNotification,
+            ),
+            floatingActionButton: FloatingActionButton(
+              onPressed: () async {
+                final created = await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => EditNotificationScreen(
-                      notification: notification,
+                      notification: Notifications(
+                        id: 0,
+                        title: '',
+                        description: '',
+                        createdAt: DateTime.now(),
+                      ),
                     ),
                   ),
                 );
-
-                if (updated != null) {
-                  _updateNotification(updated);
+                if (created != null) {
+                  setState(() {
+                    allNotifications.add(created);
+                    filteredNotifications = List.from(allNotifications);
+                  });
                 }
               },
-              onDeleteNotification: _deleteNotification,
+              child: const Icon(Icons.add),
             ),
           ),
         ),
@@ -93,16 +98,14 @@ class _NotificationAdminScreenState extends State<NotificationAdminScreen> {
   }
 }
 
-class NotificationAdminBody extends StatelessWidget {
+class NotificationsScreenBody extends StatelessWidget {
   final List<Notifications> notifications;
-  final void Function(Notifications) onDeleteNotification;
-  final void Function(Notifications) onTapNotification;
+  final Function(Notifications) onUpdateNotification;
 
-  const NotificationAdminBody({
+  const NotificationsScreenBody({
     super.key,
     required this.notifications,
-    required this.onDeleteNotification,
-    required this.onTapNotification,
+    required this.onUpdateNotification,
   });
 
   String _formatDate(DateTime date) {
@@ -115,31 +118,29 @@ class NotificationAdminBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: notifications.isEmpty
-          ? const Center(child: Text('Nenhuma notificação encontrada.'))
-          : ListView.builder(
-              itemCount: notifications.length,
-              itemBuilder: (context, index) {
-                final notif = notifications[index];
-
-                return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  elevation: 4,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: ListTile(
-                    title: Text(notif.title),
-                    subtitle: Text(notif.description),
-                    trailing: Text(
-                      _formatDate(notif.createdAt),
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                    onTap: () => onTapNotification(notif),
-                  ),
-                );
-              },
-            ),
+      child: ListView.separated(
+        itemCount: notifications.length,
+        separatorBuilder: (_, __) => const Divider(),
+        itemBuilder: (context, index) {
+          final notification = notifications[index];
+          return ListTile(
+            leading: const Icon(Icons.notifications),
+            title: Text(notification.title),
+            subtitle: Text(_formatDate(notification.createdAt)),
+            onTap: () async {
+              final updated = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => EditNotificationScreen(notification: notification),
+                ),
+              );
+              if (updated != null && updated is Notifications) {
+                onUpdateNotification(updated);
+              }
+            },
+          );
+        },
+      ),
     );
   }
 }
@@ -174,9 +175,8 @@ class _EditNotificationScreenState extends State<EditNotificationScreen> {
     Navigator.pop(context, updated);
   }
 
-  void _delete() {
-    Navigator.pop(context); // Pode passar null para indicar exclusão se preferir
-    // A deleção real deve ser tratada no parent após Navigator.pop
+  void _deleteNotification() {
+    Navigator.pop(context, null);
   }
 
   @override
@@ -184,7 +184,6 @@ class _EditNotificationScreenState extends State<EditNotificationScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Editar Notificação"),
-        leading: BackButton(),
         actions: [
           IconButton(
             icon: const Icon(Icons.save),
@@ -197,10 +196,7 @@ class _EditNotificationScreenState extends State<EditNotificationScreen> {
         child: Column(
           children: [
             Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+              color: Theme.of(context).colorScheme.primary,
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
@@ -208,12 +204,14 @@ class _EditNotificationScreenState extends State<EditNotificationScreen> {
                     TextField(
                       controller: titleController,
                       decoration: const InputDecoration(labelText: 'Título'),
+                      onChanged: (value) => setState(() {}),
                     ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: descController,
                       maxLines: 3,
                       decoration: const InputDecoration(labelText: 'Descrição'),
+                      onChanged: (value) => setState(() {}),
                     ),
                   ],
                 ),
@@ -221,7 +219,7 @@ class _EditNotificationScreenState extends State<EditNotificationScreen> {
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
-              onPressed: _delete,
+              onPressed: _deleteNotification,
               icon: const Icon(Icons.delete),
               label: const Text('Apagar Notificação'),
               style: ElevatedButton.styleFrom(
